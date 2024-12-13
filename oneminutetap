@@ -1,0 +1,194 @@
+<style>
+  #gameContainer {
+    width: 300px;
+    height: 700px;
+    border: 3px solid #FFD700;
+    border-radius: 20px;
+    background: #2e2e3f;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px;
+  }
+
+  #header {
+    color: #FFD700;
+    font-size: 24px;
+    text-align: center;
+    margin-top: 20px;
+  }
+
+  #tapArea {
+    width: 100%;
+    height: 400px;
+    background-color: #4A90E2;
+    border-radius: 10px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: #FFF;
+    font-size: 32px;
+    font-weight: bold;
+    cursor: pointer;
+  }
+
+  #score {
+    font-size: 24px;
+    color: white;
+    margin-top: 10px;
+  }
+
+  #popUp {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 250px;
+    background-color: #4A90E2;
+    border-radius: 15px;
+    text-align: center;
+    color: #FFF;
+    font-size: 20px;
+    padding: 20px;
+    display: none;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+  }
+
+  #tryAgainButton {
+    padding: 10px 20px;
+    font-size: 16px;
+    color: white;
+    background-color: #FF6347;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    display: none;
+  }
+
+  #leaderboard {
+    width: 100%;
+    margin-top: 20px;
+    background-color: #333;
+    border-radius: 10px;
+    padding: 10px;
+    color: white;
+    font-size: 18px;
+    overflow-y: auto;
+    max-height: 150px;
+  }
+
+  .leaderboard-entry {
+    display: flex;
+    justify-content: space-between;
+    padding: 5px 0;
+    border-bottom: 1px solid #555;
+  }
+</style>
+
+<div id="gameContainer">
+  <div id="header">🔥 Tap as fast as you can! 🔥</div>
+  <div id="tapArea">Tap to Start</div>
+  <div id="score">Time Left: 60s | Taps: 0</div>
+  <div id="leaderboard">
+    <h3>🏆 Leaderboard</h3>
+    <div id="leaderboard-entries"></div>
+  </div>
+</div>
+
+<div id="popUp">
+  <p>Time's up! You scored <span id="finalScore"></span> taps!</p>
+  <button id="tryAgainButton">Try Again</button>
+</div>
+
+<script type="text/javascript">
+  document.addEventListener('DOMContentLoaded', function() {
+    let timeLeft = 60;
+    let taps = 0;
+    let gameRunning = false;
+    let timerInterval;
+
+    const tapArea = document.getElementById('tapArea');
+    const score = document.getElementById('score');
+    const finalScore = document.getElementById('finalScore');
+    const popUp = document.getElementById('popUp');
+    const tryAgainButton = document.getElementById('tryAgainButton');
+    const leaderboardEntries = document.getElementById('leaderboard-entries');
+
+    function startGame() {
+      if (gameRunning) return;
+      gameRunning = true;
+      taps = 0;
+      timeLeft = 60;
+      popUp.style.display = 'none';
+      tryAgainButton.style.display = 'none';
+      score.textContent = 'Time Left: 60s | Taps: 0';
+      tapArea.textContent = 'Tap! Tap! Tap!';
+      tapArea.style.pointerEvents = 'auto';
+      timerInterval = setInterval(updateTimer, 1000);
+    }
+
+    function registerTap() {
+      if (!gameRunning) startGame();
+      taps++;
+      score.textContent = `Time Left: ${timeLeft}s | Taps: ${taps}`;
+    }
+
+    function updateTimer() {
+      timeLeft--;
+      score.textContent = `Time Left: ${timeLeft}s | Taps: ${taps}`;
+      if (timeLeft <= 0) endGame();
+    }
+
+    function endGame() {
+      clearInterval(timerInterval);
+      gameRunning = false;
+      finalScore.textContent = taps;
+      popUp.style.display = 'block';
+      tapArea.textContent = 'Time is up!';
+      tapArea.style.pointerEvents = 'none';
+      updateLeaderboard(taps);
+      setTimeout(() => {
+        tryAgainButton.style.display = 'block';
+      }, 5000);
+    }
+
+    function updateLeaderboard(score) {
+      let leaderboard = JSON.parse(localStorage.getItem('leaderboard')) || [];
+      leaderboard.push({ score, date: new Date().toLocaleString() });
+      leaderboard.sort((a, b) => b.score - a.score);
+      leaderboard = leaderboard.slice(0, 10);
+      localStorage.setItem('leaderboard', JSON.stringify(leaderboard));
+      displayLeaderboard(leaderboard);
+    }
+
+    function displayLeaderboard(leaderboard) {
+      leaderboardEntries.innerHTML = '';
+      leaderboard.forEach((entry, index) => {
+        const entryElement = document.createElement('div');
+        entryElement.classList.add('leaderboard-entry');
+        entryElement.innerHTML = `<span>#${index + 1}</span> <span>${entry.score} Taps</span> <span>${entry.date}</span>`;
+        leaderboardEntries.appendChild(entryElement);
+      });
+    }
+
+    function restartGame() {
+      taps = 0;
+      timeLeft = 60;
+      popUp.style.display = 'none';
+      tryAgainButton.style.display = 'none';
+      score.textContent = 'Time Left: 60s | Taps: 0';
+      tapArea.textContent = 'Tap to Start';
+      tapArea.style.pointerEvents = 'auto';
+      gameRunning = false;
+      clearInterval(timerInterval);
+    }
+
+    tapArea.addEventListener('click', registerTap);
+    tryAgainButton.addEventListener('click', restartGame);
+
+    // Load and display the leaderboard on page load
+    const savedLeaderboard = JSON.parse(localStorage.getItem('leaderboard')) || [];
+    displayLeaderboard(savedLeaderboard);
+  });
+</script>
